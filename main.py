@@ -43,16 +43,15 @@ def inside_temp_api():
         time_.append(ele.DATACOL_DATATIME)
         temperature.append(ele.DATA_TEMP)
     group_size = 40
-    averages = [sum(temperature[i:i + group_size]) / group_size for i in range(0, len(temperature), group_size)]
+    averages = [float(sum(temperature[i:i + group_size]) / group_size ) for i in range(0, len(temperature), group_size)]
     averages.reverse()
 
     # 指定时间间隔
     time_gap = 10
     data_count = int(3600 * 2 / time_gap)
     x_sticks = [i * data_count / len(averages) for i in range(len(averages))]
-    x = np.array([i for i in range(data_count)])
+    x = [i + 1 for i in range(data_count)]
     averages_new = np.interp(x, x_sticks, averages)
-    print(averages_new)
 
     time_format = "%Y-%m-%d %H:%M:%S"
     start_time = datetime.strptime(time_[-1], time_format)
@@ -67,7 +66,7 @@ def inside_temp_api():
 
     time_new = time_stamps
 
-    return jsonify(time=time_new, temperature=averages_new)
+    return jsonify(time= list(time_new), temperature= list(averages_new))
 
 
 @app.route('/home/cold_cpu')
