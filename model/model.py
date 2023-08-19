@@ -7,7 +7,7 @@ from urllib.parse import quote_plus as urlquote
 
 
 app = Flask(__name__,template_folder="../templates/")
-app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://admin:{urlquote("reju@20220601!")}@{"180.76.100.226"}:3306/lwm'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://admin:{urlquote("reju@20220601!")}@{"180.76.100.226"}:3306/lwm?connect_timeout=300'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.auto_reload = True
 db = SQLAlchemy(app)

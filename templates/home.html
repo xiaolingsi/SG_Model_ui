@@ -5,13 +5,23 @@
     <title>Welcome!</title>
 </head>
 <body style="height: 90%; width: 100% ;display: flex" >
-    <div style="height: 100%; width: 40%;white-space: nowrap;margin-left: 5px">
-        <div id="container" style="height: 50%; width: 100%"></div>
-        <div id="out_predict_container" style="height: 50%; width: 100%"></div>
+    <div style="height: 100%; width: 60%;white-space: nowrap">
+        <div id="container" style="height: 55%; width: 100%"></div>
+        <div id="out_predict_container" style="height: 55%; width: 100%"></div>
     </div>
-    <div style="height: 100%; width: 40%;white-space: nowrap;margin-left: 15%">
-        <div id="insideTemp_container" style="height: 100%; width: 100%"></div>
-        <div id="insideTemp_predict" style="height: 100%; width: 100%"></div>
+    <div style="height: 100%; width: 70%;white-space: nowrap;margin-left: 2%">
+        <div id="cold_cpu_container" style="height: 55%; width: 100%"></div>
+        <div id="info-container" style="width: 100%;
+                                      height: 45%;
+                                      border: 1px solid #ccc;
+                                      overflow: hidden;
+                                      overflow-y: scroll;">
+            <!-- 滚动的信息将在这里显示 -->
+          </div>
+    </div>
+    <div style="height: 100%; width: 60%;white-space: nowrap;margin-left: 1%">
+        <div id="insideTemp_container" style="height: 55%; width: 100%"></div>
+        <div id="insideTemp_predict" style="height: 55%; width: 100%"></div>
     </div>
 
 
@@ -38,7 +48,7 @@
   <script type="text/javascript">
     $.ajax({
         type:'GET',
-        url:"http://127.0.0.1:5000/home/temperature",
+        url:"http://127.0.0.1:8888/home/temperature",
         dataType:'json',
         async:false,
         success:function(data){
@@ -56,9 +66,12 @@
     var temperature_option;
 
     temperature_option = {
+        tooltip: {
+        trigger: 'axis'
+    },
         title: [{
       left: 'center',
-      text: 'Outside temperature'
+      text: 'Outside Temperature'
     }]
         ,
   xAxis: {
@@ -69,14 +82,16 @@
   },
   yAxis: {
     type: 'value',
-      min: 10,
-      max: 40
+      min: Math.round(Math.min.apply(null,temperature_data["temperature"]) - 2),
+      max: Math.round(Math.max.apply(null,temperature_data["temperature"]) + 2)
+
   },
   series: [
     {
       data: temperature_data["temperature"],
       type: 'line',
-      smooth: true
+      smooth: true,
+        showSymbol: false,
     }
   ]
 };
@@ -86,11 +101,181 @@
     }
     window.addEventListener('resize', myChart_temperature.resize);
 
-
-  {#  以下为室内温度展示#}
+    {# 以下为室外温度预测—————————————————————————————————————————————————————————————————————————— #}
     $.ajax({
         type:'GET',
-        url:"http://127.0.0.1:5000/home/inside_temp",
+        url:"http://127.0.0.1:8888/home/temperature_pre",
+        dataType:'json',
+        async:false,
+        success:function(data){
+            temperature_pre_data = data.valueOf('responseJSON').valueOf('temperature')
+              //html原本的js代码
+        }
+    });
+    var temperature_pre_dom = document.getElementById('out_predict_container');
+    var myChart_temperature_pre = echarts.init(temperature_pre_dom, null, {
+      renderer: 'canvas',
+      useDirtyRect: false
+    });
+    {#var app = {};#}
+
+    var temperature_pre_option;
+
+    temperature_pre_option = {
+         legend:{
+    data:['预测值','历史值'],
+    orient: 'horizontal', // 图例的布局方向（垂直）
+    right: 0, // 图例距离右侧的距离
+    top: 'center', // 图例垂直居中
+        },
+        tooltip: {
+        trigger: 'axis'
+    },
+        title: [{
+      left: 'center',
+      text: 'Outside Temperature Predict'
+    }]
+        ,
+  xAxis: {
+    type: 'category',
+    data: temperature_pre_data["time"].map(function (item) {
+  return item.substr(17,8);
+})
+  },
+  yAxis: {
+    type: 'value',
+      min: Math.round(Math.min.apply(null,temperature_pre_data["temperature"]) - 2),
+      max: Math.round(Math.max.apply(null,temperature_pre_data["temperature"]) + 2)
+
+  },
+  series: [
+
+      {
+      data: temperature_pre_data["temperature"],
+      type: 'line',
+      smooth: true,
+        showSymbol: false,
+          name:'预测值',
+          color:'#e67e22',
+    },
+    {
+      data: temperature_pre_data["temperature"].slice(1,240),
+      type: 'line',
+      smooth: true,
+        showSymbol: false,
+        name:'历史值',
+        color:'#3498db',
+        lineWidth: 20,
+        lineStyle:{
+        width:3//设置线条粗细
+                                }
+    }
+  ]
+};
+
+    if (temperature_pre_option && typeof temperature_pre_option === 'object') {
+      myChart_temperature_pre.setOption(temperature_pre_option);
+    }
+    window.addEventListener('resize', myChart_temperature_pre.resize);
+
+    {# 以下为回水温度展示—————————————————————————————————————————————————————————————————————————— #}
+    $.ajax({
+        type:'GET',
+        url:"http://127.0.0.1:8888/home/cold_cpu",
+        dataType:'json',
+        async:false,
+        success:function(data){
+            temperature_data = data.valueOf('responseJSON').valueOf('temperature')
+              //html原本的js代码
+        }
+    });
+    {#console.log(temperature_data)#}
+    {#console.log(temperature_data["temperature"]['out_temperature_2'])#}
+    var cold_cpu_dom = document.getElementById('cold_cpu_container');
+    var myChart_cold_cpu = echarts.init(cold_cpu_dom, null, {
+      renderer: 'canvas',
+      useDirtyRect: false
+    });
+    var cold_cpu_option;
+    cold_cpu_option = {
+        legend:{
+    data:['妇产楼','儿童楼','门诊楼单台','门诊楼1','门诊楼2'],
+    orient: 'vertical', // 图例的布局方向（垂直）
+    right: 0, // 图例距离右侧的距离
+    top: 'center', // 图例垂直居中
+
+        },
+        grid: {
+    right: '20%' // 图表右边距离
+  },
+        tooltip: {
+        trigger: 'axis'
+    },
+        title: [{
+      left: 'center',
+      text: '冷水主机回水温度'
+    }]
+        ,
+  xAxis: {
+    type: 'category',
+    data: temperature_data["time"].map(function (item) {
+  return item.substr(17,8);
+})
+  },
+  yAxis: {
+    type: 'value',
+  },
+  series: [
+    {
+      data: temperature_data["temperature"]["out_temperature_1"],
+      type: 'line',
+        color:'#9b59b6',
+      smooth: true,
+        name:'妇产楼'
+    },
+      {
+      data: temperature_data["temperature"]["out_temperature_2"],
+      type: 'line',
+        color:'#3498db',
+      smooth: true,
+
+        name:'儿童楼'
+    },
+      {
+      data: temperature_data["temperature"]["out_temperature_3"],
+      type: 'line',
+        color:'#2ecc71',
+      smooth: true,
+          name:'门诊楼单台'
+    },
+      {
+      data: temperature_data["temperature"]["out_temperature_4"],
+      type: 'line',
+        color:'#e74c3c',
+      smooth: true,
+          name:'门诊楼1'
+    },
+      {
+      data: temperature_data["temperature"]["out_temperature_5"],
+      type: 'line',
+        color:'#e67e22',
+      smooth: true,
+          name:'门诊楼2'
+    }
+  ]
+};
+
+    if (cold_cpu_option && typeof cold_cpu_option === 'object') {
+      myChart_cold_cpu.setOption(cold_cpu_option);
+    }
+    window.addEventListener('resize', myChart_cold_cpu.resize);
+
+
+
+  {#  以下为室内温度展示 ————————————————————————————————————————————————————————————————————————————————#}
+    $.ajax({
+        type:'GET',
+        url:"http://127.0.0.1:8888/home/inside_temp",
         dataType:'json',
         async:false,
         success:function(data){
@@ -107,9 +292,6 @@
 
     var inside_temp_option;
 
-    // prettier-ignore
-const inside_temp_data = [["2000-06-05", 116], ["2000-06-06", 129], ["2000-06-07", 135], ["2000-06-08", 86], ["2000-06-09", 73], ["2000-06-10", 85], ["2000-06-11", 73], ["2000-06-12", 68], ["2000-06-13", 92], ["2000-06-14", 130], ["2000-06-15", 245], ["2000-06-16", 139], ["2000-06-17", 115], ["2000-06-18", 111], ["2000-06-19", 309], ["2000-06-20", 206], ["2000-06-21", 137], ["2000-06-22", 128], ["2000-06-23", 85], ["2000-06-24", 94], ["2000-06-25", 71], ["2000-06-26", 106], ["2000-06-27", 84], ["2000-06-28", 93], ["2000-06-29", 85], ["2000-06-30", 73], ["2000-07-01", 83], ["2000-07-02", 125], ["2000-07-03", 107], ["2000-07-04", 82], ["2000-07-05", 44], ["2000-07-06", 72], ["2000-07-07", 106], ["2000-07-08", 107], ["2000-07-09", 66], ["2000-07-10", 91], ["2000-07-11", 92], ["2000-07-12", 113], ["2000-07-13", 107], ["2000-07-14", 131], ["2000-07-15", 111], ["2000-07-16", 64], ["2000-07-17", 69], ["2000-07-18", 88], ["2000-07-19", 77], ["2000-07-20", 83], ["2000-07-21", 111], ["2000-07-22", 57], ["2000-07-23", 55], ["2000-07-24", 60]];
-{#const inside_temp_dateList = temperature_data["time"].map#}
 const inside_temp_dateList = temperature_data["time"].map(function (item) {
   return item.substr(17,8);
 });
@@ -122,68 +304,37 @@ inside_temp_option = {
       type: 'continuous',
       seriesIndex: 0,
     }
-    {#,
-    {
-      show: false,
-      type: 'continuous',
-      seriesIndex: 1,
-      dimension: 0,
-      min: 0,
-      max: inside_temp_dateList.length - 1
-    }#}
   ],
   title: [
     {
       left: 'center',
       text: 'Inside Temperature'
     }
-    {#,
-    {
-      top: '55%',
-      left: 'center',
-      text: 'Gradient along the x axis'
-    }#}
   ],
   tooltip: {
     trigger: 'axis'
   },
   xAxis: [
     {
-      data: inside_temp_dateList
-    }
-    {#,
-    {
       data: inside_temp_dateList,
-      gridIndex: 1
-    }#}
+    }
+
   ],
+
   yAxis: [
-    {},
-    {#{
-      gridIndex: 1
-    }#}
-  ],
-  grid: [
     {
-      bottom: '60%'
-    },
-    {
-      top: '60%'
+        min: Math.round(Math.min.apply(null,inside_temp_valueList) - 2),
+        max: Math.round(Math.max.apply(null,inside_temp_valueList) + 2)
     }
   ],
+
   series: [
     {
       type: 'line',
       showSymbol: false,
-      data: inside_temp_valueList
-    },
-    {#{
-      type: 'line',
-      showSymbol: false,
       data: inside_temp_valueList,
-      xAxisIndex: 1,
-      yAxisIndex: 1
-    }#}
+
+    }
   ]
 };
 
@@ -192,6 +343,113 @@ inside_temp_option = {
     }
 
     window.addEventListener('resize', myChart_inside_temp.resize);
+{#  以下为室内温度预测————————————————————————————————————————————————————————————————————————————————#}
+     $.ajax({
+        type:'GET',
+        url:"http://127.0.0.1:8888/home/insidetemp_pre",
+        dataType:'json',
+        async:false,
+        success:function(data){
+            temperature_data_pre = data.valueOf('responseJSON').valueOf('temperature')
+              //html原本的js代码
+        }
+    });
+    var inside_temp_pre_dom = document.getElementById('insideTemp_predict');
+    var myChart_inside_temp_pre = echarts.init(inside_temp_pre_dom, null, {
+      renderer: 'canvas',
+      useDirtyRect: false
+    });
+    {#var app = {};#}
+
+    var inside_temp_pre_option;
+
+const inside_temp_pre_dateList = temperature_data_pre["time"].map(function (item) {
+  return item.substr(17,8);
+});
+const inside_temp_pre_valueList = temperature_data_pre["temperature"]
+inside_temp_pre_option = {
+  // Make gradient line here
+  visualMap: [
+    {
+      show: false,
+      type: 'continuous',
+      seriesIndex: 0,
+    }
+  ],
+  title: [
+    {
+      left: 'center',
+      text: 'Inside Temperature Predict'
+    }
+  ],
+  tooltip: {
+    trigger: 'axis'
+  },
+  xAxis: [
+    {
+      data: inside_temp_pre_dateList,
+    }
+
+  ],
+
+  yAxis: [
+    {
+        min: Math.round(Math.min.apply(null,inside_temp_pre_valueList) - 2),
+        max: Math.round(Math.max.apply(null,inside_temp_pre_valueList) + 2)
+    }
+  ],
+
+  series: [
+
+      {
+      data: inside_temp_pre_valueList,
+      type: 'line',
+      smooth: true,
+        showSymbol: false,
+          name:'预测值',
+          color:'#e67e22',
+    },
+    {
+      data: inside_temp_pre_valueList.slice(1,250),
+      type: 'line',
+      smooth: true,
+        showSymbol: false,
+        name:'历史值',
+        color:'#3498db',
+        lineWidth: 20,
+        lineStyle:{
+        width:3//设置线条粗细
+                                }
+    }
+  ]
+};
+
+    if (inside_temp_pre_option && typeof inside_temp_pre_option === 'object') {
+      myChart_inside_temp_pre.setOption(inside_temp_pre_option);
+    }
+
+    window.addEventListener('resize', myChart_inside_temp_pre.resize);
+    $.ajax({
+        type:'GET',
+        url:"http://127.0.0.1:8888/home/info",
+        dataType:'json',
+        async:false,
+        success:function(data){
+            mqtt_info = data
+              //html原本的js代码
+        }
+    });
+    const infoContainer = document.getElementById("info-container");
+    console.log(mqtt_info)
+    for (let i = 0;i<3;i++){
+        const message = document.createElement("div");
+        message.textContent = mqtt_info[i];
+        infoContainer.appendChild(message);
+    }
+
+
+  // 滚动到最新消息位置
+  infoContainer.scrollTop = infoContainer.scrollHeight;
   </script>
 </body>
 </html>
