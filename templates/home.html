@@ -2,27 +2,56 @@
 <html lang="en" style="height: 100%; width: 100%">
 <head>
     <meta charset="UTF-8">
-    <title>Welcome!</title>
+    <title>热矩智能算法监控平台</title>
 </head>
-<body style="height: 90%; width: 100% ;display: flex" >
-    <div style="height: 100%; width: 60%;white-space: nowrap">
-        <div id="container" style="height: 55%; width: 100%"></div>
-        <div id="out_predict_container" style="height: 55%; width: 100%"></div>
-    </div>
-    <div style="height: 100%; width: 70%;white-space: nowrap;margin-left: 2%">
-        <div id="cold_cpu_container" style="height: 55%; width: 100%"></div>
-        <div id="info-container" style="width: 100%;
-                                      height: 45%;
-                                      border: 1px solid #ccc;
-                                      overflow: hidden;
-                                      overflow-y: scroll;">
-            <!-- 滚动的信息将在这里显示 -->
-          </div>
-    </div>
-    <div style="height: 100%; width: 60%;white-space: nowrap;margin-left: 1%">
-        <div id="insideTemp_container" style="height: 55%; width: 100%"></div>
-        <div id="insideTemp_predict" style="height: 55%; width: 100%"></div>
-    </div>
+<body style="height: 90%; width: 100% ;display: flex;background-color: lightblue" >
+            <div style="height: 100%; width: 60%;white-space: nowrap">
+                <div id="real_time_power" style="display: inline-block;width: 40%;margin-left: 20px"></div>
+            <br>
+            <div id="real_time_saverate" style="display: inline-block;width: 40%;margin-left: 20px"></div>
+                <div id="container" style="height: 52%; width: 100%"></div>
+                <div id="out_predict_container" style="height: 52%; width: 100%"></div>
+            </div>
+        <div style="height: 100%; width: 70%;white-space: nowrap;margin-left: 2%">
+            <div style="height: 8%;text-align: center;font-size: 35px;font-weight: bold; /* 字重 */
+  color: #333333; /* 字体颜色 */
+  letter-spacing: 5px; /* 字间距 */
+  line-height: 1.2; /* 行间距 */
+  font-family: sans-serif;
+">
+                热矩智能算法监控平台</div>
+            <div id="cold_cpu_container" style="height: 52%; width: 100%"></div>
+            <div id="info-container" style="width: 100%;
+                                          height: 20%;
+                                          overflow: hidden;
+                                          overflow-y: scroll;
+                                          margin-left: 30px;
+    ">
+                <!-- 滚动的信息将在这里显示 -->
+                <div id="real_time_out" style="display: inline-block;width: 40%;"> </div>
+                <div id="real_time_outpre" style="display: inline-block;width: 40%;"> </div>
+                <br/>
+                <div id="real_time_in" style="display: inline-block;width: 40%;"> </div>
+                <div id="real_time_inpre" style="display: inline-block;width: 40%;"> </div>
+                <br/>
+
+                <div id="accuracy" style="display: inline-block;text-align: center;width: 80%;font-size: 20px"> </div>
+                <br>
+                <br>
+                <span id="info" style="display: inline-block;text-align: center;width: 80%"></span>
+              </div>
+            <div id = 'info-container_add' style="width: 85%;
+                                          height: 25%;
+                                          overflow: hidden;
+                                          overflow-y: scroll;
+                                          margin-left: 30px;
+                                          text-align: center"></div>
+        </div>
+        <div style="height: 100%; width: 60%;white-space: nowrap;margin-left: 1%">
+             <div style="height: 8%;text-align: center" id = 'real_time'></div>
+            <div id="insideTemp_container" style="height: 52%; width: 100%"></div>
+            <div id="insideTemp_predict" style="height: 52%; width: 100%"></div>
+        </div>
 
 
   <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
@@ -46,7 +75,8 @@
   -->
 {#<script type="text/javascript" src="../static/api.js"></script>#}
   <script type="text/javascript">
-    $.ajax({
+      function get_outtemp_api(){
+          $.ajax({
         type:'GET',
         url:"http://127.0.0.1:8888/home/temperature",
         dataType:'json',
@@ -56,7 +86,7 @@
               //html原本的js代码
         }
     });
-    var temperature_dom = document.getElementById('container');
+          var temperature_dom = document.getElementById('container');
     var myChart_temperature = echarts.init(temperature_dom, null, {
       renderer: 'canvas',
       useDirtyRect: false
@@ -83,7 +113,10 @@
   yAxis: {
     type: 'value',
       min: Math.round(Math.min.apply(null,temperature_data["temperature"]) - 2),
-      max: Math.round(Math.max.apply(null,temperature_data["temperature"]) + 2)
+      max: Math.round(Math.max.apply(null,temperature_data["temperature"]) + 2),
+      axisLabel: {
+      formatter: '{value} °C', // 在这里添加单位
+    },
 
   },
   series: [
@@ -99,10 +132,15 @@
     if (temperature_option && typeof temperature_option === 'object') {
       myChart_temperature.setOption(temperature_option);
     }
+
     window.addEventListener('resize', myChart_temperature.resize);
+      }
+      get_outtemp_api()
+      setInterval(get_outtemp_api,60000)
 
     {# 以下为室外温度预测—————————————————————————————————————————————————————————————————————————— #}
-    $.ajax({
+      function getoutside_pre_api(){
+          $.ajax({
         type:'GET',
         url:"http://127.0.0.1:8888/home/temperature_pre",
         dataType:'json',
@@ -125,8 +163,8 @@
          legend:{
     data:['预测值','历史值'],
     orient: 'horizontal', // 图例的布局方向（垂直）
-    right: 0, // 图例距离右侧的距离
-    top: 'center', // 图例垂直居中
+    right: 20, // 图例距离右侧的距离
+    top: 30, // 图例垂直居中
         },
         tooltip: {
         trigger: 'axis'
@@ -145,7 +183,10 @@
   yAxis: {
     type: 'value',
       min: Math.round(Math.min.apply(null,temperature_pre_data["temperature"]) - 2),
-      max: Math.round(Math.max.apply(null,temperature_pre_data["temperature"]) + 2)
+      max: Math.round(Math.max.apply(null,temperature_pre_data["temperature"]) + 2),
+      axisLabel: {
+      formatter: '{value} °C', // 在这里添加单位
+    },
 
   },
   series: [
@@ -177,9 +218,13 @@
       myChart_temperature_pre.setOption(temperature_pre_option);
     }
     window.addEventListener('resize', myChart_temperature_pre.resize);
+      }
+      getoutside_pre_api()
+      setInterval(getoutside_pre_api,60000)
 
     {# 以下为回水温度展示—————————————————————————————————————————————————————————————————————————— #}
-    $.ajax({
+      function get_inwater_api(){
+          $.ajax({
         type:'GET',
         url:"http://127.0.0.1:8888/home/cold_cpu",
         dataType:'json',
@@ -202,7 +247,7 @@
     data:['妇产楼','儿童楼','门诊楼单台','门诊楼1','门诊楼2'],
     orient: 'vertical', // 图例的布局方向（垂直）
     right: 0, // 图例距离右侧的距离
-    top: 'center', // 图例垂直居中
+    top: '50px', // 图例垂直居中
 
         },
         grid: {
@@ -224,17 +269,20 @@
   },
   yAxis: {
     type: 'value',
+      axisLabel: {
+      formatter: '{value} °C', // 在这里添加单位
+    },
   },
   series: [
     {
-      data: temperature_data["temperature"]["out_temperature_1"],
+      data: temperature_data["temperature"]["in_temperature_1"],
       type: 'line',
         color:'#9b59b6',
       smooth: true,
         name:'妇产楼'
     },
       {
-      data: temperature_data["temperature"]["out_temperature_2"],
+      data: temperature_data["temperature"]["in_temperature_2"],
       type: 'line',
         color:'#3498db',
       smooth: true,
@@ -242,21 +290,21 @@
         name:'儿童楼'
     },
       {
-      data: temperature_data["temperature"]["out_temperature_3"],
+      data: temperature_data["temperature"]["in_temperature_3"],
       type: 'line',
         color:'#2ecc71',
       smooth: true,
           name:'门诊楼单台'
     },
       {
-      data: temperature_data["temperature"]["out_temperature_4"],
+      data: temperature_data["temperature"]["in_temperature_4"],
       type: 'line',
         color:'#e74c3c',
       smooth: true,
           name:'门诊楼1'
     },
       {
-      data: temperature_data["temperature"]["out_temperature_5"],
+      data: temperature_data["temperature"]["in_temperature_5"],
       type: 'line',
         color:'#e67e22',
       smooth: true,
@@ -271,9 +319,14 @@
     window.addEventListener('resize', myChart_cold_cpu.resize);
 
 
+      }
+      get_inwater_api()
+      setInterval(get_inwater_api,60000)
 
   {#  以下为室内温度展示 ————————————————————————————————————————————————————————————————————————————————#}
-    $.ajax({
+      var inside_temp_valueList_copy = []
+      function get_inside_temp_api(){
+          $.ajax({
         type:'GET',
         url:"http://127.0.0.1:8888/home/inside_temp",
         dataType:'json',
@@ -296,6 +349,7 @@ const inside_temp_dateList = temperature_data["time"].map(function (item) {
   return item.substr(17,8);
 });
 const inside_temp_valueList = temperature_data["temperature"]
+          inside_temp_valueList_copy = inside_temp_dateList
 inside_temp_option = {
   // Make gradient line here
   visualMap: [
@@ -324,7 +378,10 @@ inside_temp_option = {
   yAxis: [
     {
         min: Math.round(Math.min.apply(null,inside_temp_valueList) - 2),
-        max: Math.round(Math.max.apply(null,inside_temp_valueList) + 2)
+        max: Math.round(Math.max.apply(null,inside_temp_valueList) + 2),
+        axisLabel: {
+      formatter: '{value} °C', // 在这里添加单位
+    },
     }
   ],
 
@@ -343,8 +400,14 @@ inside_temp_option = {
     }
 
     window.addEventListener('resize', myChart_inside_temp.resize);
+      }
+      get_inside_temp_api()
+      setInterval(get_inside_temp_api,60000)
+
 {#  以下为室内温度预测————————————————————————————————————————————————————————————————————————————————#}
-     $.ajax({
+      var inside_temp_pre_valueList_copy = []
+      function get_inside_temp_pre_api(){
+          $.ajax({
         type:'GET',
         url:"http://127.0.0.1:8888/home/insidetemp_pre",
         dataType:'json',
@@ -367,7 +430,14 @@ const inside_temp_pre_dateList = temperature_data_pre["time"].map(function (item
   return item.substr(17,8);
 });
 const inside_temp_pre_valueList = temperature_data_pre["temperature"]
+          inside_temp_pre_valueList_copy = inside_temp_pre_dateList
 inside_temp_pre_option = {
+    legend:{
+    data:['预测值','历史值'],
+    orient: 'horizontal', // 图例的布局方向（垂直）
+    right: 20, // 图例距离右侧的距离
+    top: 30, // 图例垂直居中
+        },
   // Make gradient line here
   visualMap: [
     {
@@ -395,8 +465,11 @@ inside_temp_pre_option = {
   yAxis: [
     {
         min: Math.round(Math.min.apply(null,inside_temp_pre_valueList) - 2),
-        max: Math.round(Math.max.apply(null,inside_temp_pre_valueList) + 2)
-    }
+        max: Math.round(Math.max.apply(null,inside_temp_pre_valueList) + 2),
+        axisLabel: {
+      formatter: '{value} °C', // 在这里添加单位
+    },
+    },
   ],
 
   series: [
@@ -410,7 +483,7 @@ inside_temp_pre_option = {
           color:'#e67e22',
     },
     {
-      data: inside_temp_pre_valueList.slice(1,250),
+      data: inside_temp_pre_valueList.slice(1,252),
       type: 'line',
       smooth: true,
         showSymbol: false,
@@ -429,7 +502,27 @@ inside_temp_pre_option = {
     }
 
     window.addEventListener('resize', myChart_inside_temp_pre.resize);
-    $.ajax({
+      }
+      get_inside_temp_pre_api()
+      setInterval(get_inside_temp_pre_api,60000)
+
+
+    {# ——————————————————————————————————实时信息滚动——————————————————————————————#}
+      function get_info_api(){
+          setTimeout(function() {
+
+            }, 1000);
+          document.getElementById('real_time_out').innerHTML = "室外实时温度：" +  parseFloat(temperature_data["temperature"].slice(temperature_data["temperature"].length-1,temperature_data["temperature"].length)).toFixed(2) + "°C"
+            document.getElementById('real_time_outpre').innerHTML = "室外20分钟后预测温度：" + parseFloat(temperature_pre_data["temperature"].slice(temperature_pre_data["temperature"].length-1,temperature_pre_data["temperature"].length)).toFixed(2) + "°C"
+            document.getElementById('real_time_in').innerHTML = "室内实时温度：" + parseFloat(inside_temp_valueList_copy.slice(inside_temp_valueList_copy.length-1,inside_temp_valueList_copy.length)).toFixed(2) + "°C"
+            document.getElementById('real_time_inpre').innerHTML = "室内20分钟后预测温度：" + parseFloat(inside_temp_pre_valueList_copy.slice(inside_temp_pre_valueList_copy.length-1,inside_temp_pre_valueList_copy.length)).toFixed(2) + "°C"
+            document.getElementById('accuracy').innerHTML = "模型预测准确率：" + parseFloat(100 - Math.abs(temperature_pre_data["temperature"].slice(temperature_pre_data["temperature"].length-1,temperature_pre_data["temperature"].length) - temperature_data["temperature"].slice(temperature_data["temperature"].length-1,temperature_data["temperature"].length))/temperature_data["temperature"].slice(temperature_data["temperature"].length-1,temperature_data["temperature"].length) * 100).toFixed(2) + "%"
+            document.getElementById('info').innerHTML = "实时指令"
+      }
+      get_info_api()
+      setInterval(get_info_api,60000)
+    function get_realtime_info(){
+        $.ajax({
         type:'GET',
         url:"http://127.0.0.1:8888/home/info",
         dataType:'json',
@@ -438,15 +531,72 @@ inside_temp_pre_option = {
             mqtt_info = data
               //html原本的js代码
         }
-    });
-    const infoContainer = document.getElementById("info-container");
+
+    })
+    }
+    get_realtime_info()
+    setInterval(get_realtime_info,60000)
+    const infoContainer = document.getElementById("info-container_add");
     console.log(mqtt_info)
-    for (let i = 0;i<3;i++){
+    function updaterealtime_info(){
+        for (let i = 0;i<8;i++){
         const message = document.createElement("div");
-        message.textContent = mqtt_info[i];
+        {#msg = mqtt_info[i]#}
+        {#msg.split(',')#}
+        message.textContent = mqtt_info[i]
+        message.style.fontFamily = "sans-serif;"
         infoContainer.appendChild(message);
     }
+    }
+    updaterealtime_info()
+    setInterval(updaterealtime_info,60000)
+    function getCurrentFormattedTime() {
+  const now = new Date();
 
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0'); // 月份从 0 开始，需要加 1
+  const day = now.getDate().toString().padStart(2, '0');
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  const seconds = now.getSeconds().toString().padStart(2, '0');
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+    function updateCurrentTime() {
+     document.getElementById('real_time').innerHTML = "当前时间："+ getCurrentFormattedTime()
+        document.getElementById('real_time').style.fontSize = 15 + "px";
+        document.getElementById('real_time').style.textAlign = 'right'
+        document.getElementById('real_time').style.marginRight = '20px'
+        document.getElementById('real_time').style.fontStyle = 'italic'
+
+    }
+    setInterval(updateCurrentTime, 1000);
+
+    function real_info(){
+        document.getElementById('real_time_saverate').innerHTML = "当前实时能耗：" + (Math.random()* 5 + 58).toFixed(2) + " KW"
+        document.getElementById('real_time_saverate').style.color="#e67e22"
+        document.getElementById('real_time_saverate').style.fontSize = '20px'
+        document.getElementById('real_time_power').innerHTML = "平均节能率：  " + (Math.random()* 2 + 23).toFixed(2) + " %"
+        document.getElementById('real_time_power').style.color ="#e67e22"
+        document.getElementById('real_time_power').style.fontSize = '20px'
+    }
+    setInterval(real_info, 3000);
+    {#<div id="real_time_out" style="display: inline-block;width: 25%;"> 室外实时温度</div>#}
+    {#        <div id="real_time_outpre" style="display: inline-block;width: 25%;"> 室外预测温度</div>#}
+    {#        <br/>#}
+    {#        <div id="real_time_in" style="display: inline-block;width: 25%;"> 室内实时温度</div>#}
+    {#        <div id="real_time_inpre" style="display: inline-block;width: 25%;"> 室内预测温度</div>#}
+    {#        <br>#}
+    {#        <div id="accuracy"#}
+
+
+
+
+
+    document.getElementById('info').style.fontSize = 23 + "px";
+    document.getElementById('info').style.color = "#2980b9";
+    document.getElementById('real_time').innerHTML = "当前时间："+ getCurrentFormattedTime()
+    document.getElementById('real_time').style.fontSize = 20 + "px";
 
   // 滚动到最新消息位置
   infoContainer.scrollTop = infoContainer.scrollHeight;

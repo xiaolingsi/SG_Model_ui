@@ -194,11 +194,10 @@ def cold_water_api():
 
 @app.route("/home/info")
 def mqtt_info():
-    message_queue.put((datetime.now(), 123))
-    message_queue.put((datetime.now(), 123))
-    message_queue.put((datetime.now(), 123))
     res = message_queue.queue
-    return list(res)
+    res = list(res)
+    res.reverse()
+    return res
 
 
 if __name__ == '__main__':
